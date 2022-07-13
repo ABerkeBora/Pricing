@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -21,7 +21,7 @@ contract VestingToken is ERC20 {
         ERC20("VoleVestingToken", "VVT")
     {
         safekeep = _safekeep;
-        _mint(safekeep, 10000000);
+        _mint(safekeep, 100 * 10**(5+18));
         createTime = block.timestamp;
         token = _token;
     }
@@ -83,6 +83,7 @@ contract VestingToken is ERC20 {
         view
         returns (uint256)
     {
+        require(_from != address(0));
         uint256 timeAfterStartOfPay = block.timestamp - createTime - 180 days;
         require(
             timeAfterStartOfPay > 0,
@@ -100,6 +101,7 @@ contract VestingToken is ERC20 {
         view
         returns (uint256)
     {
+        require(_from != address(0));
         return
             calculateTotalPayback(_from) -
             (_vestings[_from] - balanceOf(_from));

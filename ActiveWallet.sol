@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -7,8 +7,13 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ActiveWallet is ERC721Holder, ERC1155Holder {
+
+
+contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
+    using SafeERC20 for IERC20;
     address[] public keyHolders;
     mapping(address => bool) public isKeyHolder;
     //keyHolder => adress of receiver => amount
@@ -74,7 +79,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
         IERC20 token,
         address _toAddress,
         uint256 _amount
-    ) public onlyKeyHolder {
+    ) external onlyKeyHolder {
+        require(_toAddress != address(0));
         require(
             _amount >= 0,
             "You can't set token approval amount to less than zero!"
@@ -95,7 +101,7 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
                         _toAddress
                     ] = 0;
                     approvalERC20[msg.sender][address(token)][_toAddress] = 0;
-                    token.transfer(_toAddress, _amount);
+                    token.safeTransfer(_toAddress, _amount);
                     emit SentERC20(address(token), _toAddress, _amount);
                 }
             }
@@ -107,7 +113,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
         address _toAddress,
         uint256 _id,
         bool _approval
-    ) public onlyKeyHolder {
+    ) external onlyKeyHolder {
+        require(_toAddress != address(0));
         approvalERC721[msg.sender][address(token)][_toAddress][_id] = _approval;
         emit ApprovedERC721(
             msg.sender,
@@ -132,7 +139,7 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
                     approvalERC721[msg.sender][address(token)][_toAddress][
                         _id
                     ] = false;
-                    token.transferFrom(address(this), _toAddress, _id);
+                    token.safeTransferFrom(address(this), _toAddress, _id);
                     emit SentERC721(address(token), _toAddress, _id, _approval);
                 }
             }
@@ -145,7 +152,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
         uint256 _id,
         uint256 _amount,
         bytes calldata data
-    ) public onlyKeyHolder {
+    ) external onlyKeyHolder {
+        require(_toAddress != address(0));
         require(
             _amount >= 0,
             "You can't set token approval amount to less than zero!"
@@ -188,9 +196,11 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder {
     }
 
     function setApproveOrSendETH(address _toAddress, uint256 _amount)
-        public
+        external
         onlyKeyHolder
+        nonReentrant
     {
+        require(_toAddress != address(0));
         require(
             _amount >= 0,
             "You can't set ETH approval amount to less than zero!"

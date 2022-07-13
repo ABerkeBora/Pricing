@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,6 +9,7 @@ contract Safekeep {
     IERC20 public vestingContract;
     uint256 public lockedAmount;
     address[] public keyHolders;
+    address public deployer;
     mapping(address => bool) public isKeyHolder;
     mapping(address => mapping(address => uint256)) public approval;
     uint256 public createTime;
@@ -19,6 +20,10 @@ contract Safekeep {
     modifier onlyKeyHolder() {
         require(isKeyHolder[msg.sender], "Not a Key Holder!");
         _;
+    }
+    modifier onlyDeployer(){
+      require(deployer == msg.sender, "Not Developer!");
+      _;
     }
 
     constructor(address[] memory _keyHolders, ERC20 _token) {
@@ -35,25 +40,29 @@ contract Safekeep {
         }
         token = _token;
         createTime = block.timestamp;
-        lockedAmount = 280000000 * 10**18;
-        unlockAmount[0] = 80000000 * 10**18;
-        unlockAmount[1] = 56000000 * 10**18;
-        unlockAmount[2] = 43400000 * 10**18;
-        unlockAmount[3] = 43400000 * 10**18;
-        unlockAmount[4] = 36400000 * 10**18;
-        unlockAmount[5] = 20800000 * 10**18;
+        lockedAmount = 2800 * 10**(5+18);
+        unlockAmount[0] = 800 * 10**(5+18);
+        unlockAmount[1] = 560 * 10**(5+18);
+        unlockAmount[2] = 434 * 10**(5+18);
+        unlockAmount[3] = 434 * 10**(5+18);
+        unlockAmount[4] = 364 * 10**(5+18);
+        unlockAmount[5] = 208 * 10**(5+18);
     }
 
-    function setVesting(ERC20 _vestingContract) public onlyKeyHolder {
+    function setVesting(ERC20 _vestingContract) external onlyDeployer {
         vestingContract = _vestingContract;
-        token.transfer(address(vestingContract), 10000000 * 10**18);
+        token.transfer(address(vestingContract), 100 * 10**(5+18));
+    }
+    function denounceDeployer() external onlyDeployer {
+      deployer = address(0);
     }
 
-    //This function uses the logic of 3 keyHolder wallets, so it will not find more than 1 non zero approval.
+    //This function uses the logic of 3 keyHolder wallets.
     function setApproveOrSend(address _toAddress, uint256 _amount)
-        public
+        external
         onlyKeyHolder
     {
+        require(_toAddress != address(0));
         require(
             _amount >= 0,
             "You can't set token approval amount to less than zero!"
@@ -77,7 +86,7 @@ contract Safekeep {
         }
     }
 
-    function unlockTerm() public {
+    function unlockTerm() external {
         uint256 term = (block.timestamp - createTime) / (365 days);
         for (uint8 i = 0; i <= term && i <= 5; i++) {
             if (isTermUnlocked[i]) {
@@ -90,7 +99,7 @@ contract Safekeep {
         }
     }
 
-    function vest(address _to, uint256 _amount) public onlyKeyHolder {
+    function vest(address _to, uint256 _amount) external onlyKeyHolder {
         vestingContract.transfer(_to, _amount);
     }
 }
