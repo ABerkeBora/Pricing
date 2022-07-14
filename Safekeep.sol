@@ -16,6 +16,9 @@ contract Safekeep {
     mapping(uint8 => bool) public isTermUnlocked;
     mapping(uint8 => uint256) public unlockAmount;
     event TermUnlocked(uint8 term, uint256 unlockedTokenWithTerm);
+    event Approved(address keyHolder, address to, uint256 amount);
+    event Sent(address to, uint256 amount);
+    event Vested(address keyHolder, address to, uint256 amount);
 
     modifier onlyKeyHolder() {
         require(isKeyHolder[msg.sender], "Not a Key Holder!");
@@ -53,7 +56,7 @@ contract Safekeep {
         vestingContract = _vestingContract;
         token.transfer(address(vestingContract), 100 * 10**(5+18));
     }
-    function denounceDeployer() external onlyDeployer {
+    function renounceDeployer() external onlyDeployer {
       deployer = address(0);
     }
 
@@ -72,6 +75,7 @@ contract Safekeep {
             "Can't send more than unlocked amount!"
         );
         approval[msg.sender][_toAddress] = _amount;
+        emit Approved(msg.sender, _toAddress, _amount);
         if (_amount > 0) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -81,6 +85,7 @@ contract Safekeep {
                     approval[keyHolders[i]][_toAddress] = 0;
                     approval[msg.sender][_toAddress] = 0;
                     token.transfer(_toAddress, _amount);
+                    emit Sent(_toAddress, _amount);
                 }
             }
         }
@@ -101,5 +106,6 @@ contract Safekeep {
 
     function vest(address _to, uint256 _amount) external onlyKeyHolder {
         vestingContract.transfer(_to, _amount);
+        emit Vested(msg.sender, _to, _amount);
     }
 }
