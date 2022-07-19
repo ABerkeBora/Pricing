@@ -77,7 +77,7 @@ contract Safekeep {
             "Can't send more than unlocked amount!"
         );
         approval[msg.sender][_toAddress] = _amount;
-        emit Approved(msg.sender, _toAddress, _amount);
+        bool isSent = false;
         if (_amount > 0) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -86,10 +86,15 @@ contract Safekeep {
                 if (approval[keyHolders[i]][_toAddress] == _amount) {
                     approval[keyHolders[i]][_toAddress] = 0;
                     approval[msg.sender][_toAddress] = 0;
+                    isSent = true;
                     token.safeTransfer(_toAddress, _amount);
                     emit Sent(_toAddress, _amount);
+
                 }
             }
+        }
+        if(!isSent){
+                    emit Approved(msg.sender, _toAddress, _amount);
         }
     }
 

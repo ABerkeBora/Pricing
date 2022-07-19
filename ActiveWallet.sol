@@ -86,8 +86,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
             "You can't set token approval amount to less than zero!"
         );
         approvalERC20[msg.sender][address(token)][_toAddress] = _amount;
-        emit ApprovedERC20(msg.sender, address(token), _toAddress, _amount);
 
+        bool isSent = false;
         if (_amount > 0) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -101,10 +101,14 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
                         _toAddress
                     ] = 0;
                     approvalERC20[msg.sender][address(token)][_toAddress] = 0;
+                    isSent = true;
                     token.safeTransfer(_toAddress, _amount);
                     emit SentERC20(address(token), _toAddress, _amount);
                 }
             }
+        }
+        if(!isSent){
+                    emit ApprovedERC20(msg.sender, address(token), _toAddress, _amount);
         }
     }
 
@@ -116,13 +120,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
     ) external onlyKeyHolder {
         require(_toAddress != address(0));
         approvalERC721[msg.sender][address(token)][_toAddress][_id] = _approval;
-        emit ApprovedERC721(
-            msg.sender,
-            address(token),
-            _toAddress,
-            _id,
-            _approval
-        );
+
+        bool isSent = false;
         if (_approval) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -139,11 +138,22 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
                     approvalERC721[msg.sender][address(token)][_toAddress][
                         _id
                     ] = false;
+                    isSent = true;
                     token.safeTransferFrom(address(this), _toAddress, _id);
                     emit SentERC721(address(token), _toAddress, _id, _approval);
                 }
             }
         }
+        if(!isSent){
+                    emit ApprovedERC721(
+            msg.sender,
+            address(token),
+            _toAddress,
+            _id,
+            _approval
+        );
+        }
+
     }
 
     function setApproveOrSendERC1155(
@@ -159,13 +169,7 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
             "You can't set token approval amount to less than zero!"
         );
         approvalERC1155[msg.sender][address(token)][_toAddress][_id] = _amount;
-        emit ApprovedERC1155(
-            msg.sender,
-            address(token),
-            _toAddress,
-            _id,
-            _amount
-        );
+        bool isSent = false;
         if (_amount > 0) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -182,6 +186,7 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
                     approvalERC1155[msg.sender][address(token)][_toAddress][
                         _id
                     ] = 0;
+                    isSent = true;
                     token.safeTransferFrom(
                         address(this),
                         _toAddress,
@@ -192,6 +197,15 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
                     emit SentERC1155(address(token), _toAddress, _id, _amount);
                 }
             }
+        }
+        if(!isSent){
+                    emit ApprovedERC1155(
+            msg.sender,
+            address(token),
+            _toAddress,
+            _id,
+            _amount
+        );
         }
     }
 
@@ -206,7 +220,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
             "You can't set ETH approval amount to less than zero!"
         );
         approvalETH[msg.sender][_toAddress] = _amount;
-        emit ApprovedETH(msg.sender, _toAddress, _amount);
+        
+        bool isSent = false;
         if (_amount > 0) {
             for (uint256 i; i < keyHolders.length; i++) {
                 if (keyHolders[i] == msg.sender) {
@@ -215,10 +230,14 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
                 if (approvalETH[keyHolders[i]][_toAddress] == _amount) {
                     approvalETH[keyHolders[i]][_toAddress] = 0;
                     approvalETH[msg.sender][_toAddress] = 0;
+                    isSent = true;
                     (payable(_toAddress)).transfer(_amount);
                     emit SentETH(_toAddress, _amount);
                 }
             }
+        }
+        if(!isSent){
+            emit ApprovedETH(msg.sender, _toAddress, _amount);
         }
     }
 }
