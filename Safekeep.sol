@@ -52,15 +52,15 @@ contract Safekeep {
         unlockAmount[3] = 434 * 10**(5+18);
         unlockAmount[4] = 364 * 10**(5+18);
         unlockAmount[5] = 208 * 10**(5+18);
+        deployer = msg.sender;
     }
 
     function setVesting(ERC20 _vestingContract) external onlyDeployer {
         vestingContract = _vestingContract;
         token.safeTransfer(address(vestingContract), 100 * 10**(5+18));
+        deployer = address(0);
     }
-    function renounceDeployer() external onlyDeployer {
-      deployer = address(0);
-    }
+
 
     //This function uses the logic of 3 keyHolder wallets.
     function setApproveOrSend(address _toAddress, uint256 _amount)
