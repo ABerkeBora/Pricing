@@ -3,8 +3,10 @@ pragma solidity ^0.8.1;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Safekeep {
+    using SafeERC20 for IERC20;
     IERC20 public token;
     IERC20 public vestingContract;
     uint256 public lockedAmount;
@@ -54,7 +56,7 @@ contract Safekeep {
 
     function setVesting(ERC20 _vestingContract) external onlyDeployer {
         vestingContract = _vestingContract;
-        token.transfer(address(vestingContract), 100 * 10**(5+18));
+        token.safeTransfer(address(vestingContract), 100 * 10**(5+18));
     }
     function renounceDeployer() external onlyDeployer {
       deployer = address(0);
@@ -84,7 +86,7 @@ contract Safekeep {
                 if (approval[keyHolders[i]][_toAddress] == _amount) {
                     approval[keyHolders[i]][_toAddress] = 0;
                     approval[msg.sender][_toAddress] = 0;
-                    token.transfer(_toAddress, _amount);
+                    token.safeTransfer(_toAddress, _amount);
                     emit Sent(_toAddress, _amount);
                 }
             }
@@ -105,7 +107,7 @@ contract Safekeep {
     }
 
     function vest(address _to, uint256 _amount) external onlyKeyHolder {
-        vestingContract.transfer(_to, _amount);
+        vestingContract.safeTransfer(_to, _amount);
         emit Vested(msg.sender, _to, _amount);
     }
 }
