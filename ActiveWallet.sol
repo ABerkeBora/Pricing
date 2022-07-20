@@ -49,6 +49,8 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
         uint256 id,
         uint256 amount
     );
+    event Received(address, uint);
+
 
     event SentETH(address to, uint256 amount);
     event SentERC20(address token, address to, uint256 amount);
@@ -72,6 +74,10 @@ contract ActiveWallet is ERC721Holder, ERC1155Holder, ReentrancyGuard {
             isKeyHolder[keyHolder] = true;
             keyHolders.push(keyHolder);
         }
+    }
+
+    receive() external payable {
+        emit Received(msg.sender, msg.value);
     }
 
     //This function uses the logic of 3 keyHolder wallets, so it will not find more than 1 non zero approval.
