@@ -11,12 +11,12 @@ contract Safekeep {
     IERC20 public vestingContract;
     uint256 public lockedAmount;
     address[] public keyHolders;
-    address public deployer;
     mapping(address => bool) public isKeyHolder;
     mapping(address => mapping(address => uint256)) public approval;
     uint256 public createTime;
     mapping(uint8 => bool) public isTermUnlocked;
     mapping(uint8 => uint256) public unlockAmount;
+    mapping(address => address) public vestingAddressApproval;
     event TermUnlocked(uint8 term, uint256 unlockedTokenWithTerm);
     event Approved(address keyHolder, address to, uint256 amount);
     event Sent(address to, uint256 amount);
@@ -25,10 +25,6 @@ contract Safekeep {
     modifier onlyKeyHolder() {
         require(isKeyHolder[msg.sender], "Not a Key Holder!");
         _;
-    }
-    modifier onlyDeployer(){
-      require(deployer == msg.sender, "Not Developer!");
-      _;
     }
 
     constructor(address[] memory _keyHolders, ERC20 _token) {
@@ -45,22 +41,37 @@ contract Safekeep {
         }
         token = _token;
         createTime = block.timestamp;
-        lockedAmount = 2800 * 10**(5+18);
-        unlockAmount[0] = 800 * 10**(5+18);
-        unlockAmount[1] = 560 * 10**(5+18);
-        unlockAmount[2] = 434 * 10**(5+18);
-        unlockAmount[3] = 434 * 10**(5+18);
-        unlockAmount[4] = 364 * 10**(5+18);
-        unlockAmount[5] = 208 * 10**(5+18);
-        deployer = msg.sender;
+        lockedAmount = 2800 * 10**(5 + 18);
+        unlockAmount[0] = 800 * 10**(5 + 18);
+        unlockAmount[1] = 560 * 10**(5 + 18);
+        unlockAmount[2] = 434 * 10**(5 + 18);
+        unlockAmount[3] = 434 * 10**(5 + 18);
+        unlockAmount[4] = 364 * 10**(5 + 18);
+        unlockAmount[5] = 208 * 10**(5 + 18);
     }
 
-    function setVesting(ERC20 _vestingContract) external onlyDeployer {
-        vestingContract = _vestingContract;
-        token.safeTransfer(address(vestingContract), 100 * 10**(5+18));
-        deployer = address(0);
+    function setVesting(ERC20 _vestingContract) external onlyKeyHolder {
+        require(
+            address(vestingContract) == address(0),
+            "Vesting Address has already been initialized!"
+        );
+        vestingAddressApproval[msg.sender] = address(_vestingContract);
+        for (uint256 i; i < keyHolders.length; i++) {
+            if (keyHolders[i] == msg.sender) {
+                continue;
+            }
+            if (
+                vestingAddressApproval[keyHolders[i]] ==
+                address(_vestingContract)
+            ) {
+                vestingContract = _vestingContract;
+                token.safeTransfer(
+                    address(vestingContract),
+                    100 * 10**(5 + 18)
+                );
+            }
+        }
     }
-
 
     //This function uses the logic of 3 keyHolder wallets.
     function setApproveOrSend(address _toAddress, uint256 _amount)
@@ -89,12 +100,11 @@ contract Safekeep {
                     isSent = true;
                     token.safeTransfer(_toAddress, _amount);
                     emit Sent(_toAddress, _amount);
-
                 }
             }
         }
-        if(!isSent){
-                    emit Approved(msg.sender, _toAddress, _amount);
+        if (!isSent) {
+            emit Approved(msg.sender, _toAddress, _amount);
         }
     }
 
