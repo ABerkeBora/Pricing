@@ -60,9 +60,10 @@ contract Safekeep {
             if (keyHolders[i] == msg.sender) {
                 continue;
             }
+            //Latter if condition is here so keyholders can switch to zero address but it wont set.
             if (
-                vestingAddressApproval[keyHolders[i]] ==
-                address(_vestingContract)
+                (vestingAddressApproval[keyHolders[i]] ==
+                address(_vestingContract)) && (address(0) != address(_vestingContract))
             ) {
                 vestingContract = _vestingContract;
                 token.safeTransfer(
